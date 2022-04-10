@@ -1,0 +1,21 @@
+# github.com/julienschmidt/httprouter v1.3.0
+## explicit; go 1.7
+github.com/julienschmidt/httprouter
+# github.com/kczimm/fuzzy v0.0.0-20180713155414-640aba1459dd
+## explicit
+github.com/kczimm/fuzzy
+# github.com/lib/pq v1.7.0
+## explicit; go 1.13
+github.com/lib/pq
+github.com/lib/pq/oid
+github.com/lib/pq/scram
+# github.com/wascript3r/cryptopay v0.0.7
+## explicit; go 1.13
+github.com/wascript3r/cryptopay/pkg/errcode
+github.com/wascript3r/cryptopay/pkg/logger/usecase
+# github.com/wascript3r/gostr v0.0.0-20200222144921-e78b2166c216
+## explicit; go 1.13
+github.com/wascript3r/gostr
+# github.com/wascript3r/httputil v0.0.0-20201106093100-52b0de959f99
+## explicit; go 1.14
+github.com/wascript3r/httputil/json
