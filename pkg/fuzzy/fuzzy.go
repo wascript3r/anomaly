@@ -1,7 +1,8 @@
 package fuzzy
 
 type Model struct {
-	Age       float64
-	MaxHR     float64
-	RestingBP float64
+	DayTime   float64
+	WeekDay   float64
+	IMSICalls float64
+	MSCCalls  float64
 }

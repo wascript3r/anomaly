@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	TotalInputCount = 3
+	TotalInputCount = 4
 )
 
 var (
@@ -69,15 +69,16 @@ func NewProbability(mfs []MembershipFunc, minX, maxX, step float64) *Probability
 }
 
 type Usecase struct {
-	ageMFs       []MembershipFunc
-	maxHRMFs     []MembershipFunc
-	restingBPMFs []MembershipFunc
+	dayTimeMFs   []MembershipFunc
+	weekDayMFs   []MembershipFunc
+	imsiCallsMFs []MembershipFunc
+	mscCallsMFs  []MembershipFunc
 	probability  *Probability
 	rules        map[RuleValue][][]RuleValue
 }
 
 func (u *Usecase) validateRules(rules [][]RuleValue) error {
-	if len(rules) != len(u.ageMFs)*len(u.maxHRMFs)*len(u.restingBPMFs) {
+	if len(rules) != len(u.dayTimeMFs)*len(u.weekDayMFs)*len(u.imsiCallsMFs)*len(u.mscCallsMFs) {
 		return ErrInvalidRuleDimensions
 	}
 
@@ -85,7 +86,7 @@ func (u *Usecase) validateRules(rules [][]RuleValue) error {
 		if len(rule) != TotalInputCount+1 {
 			return ErrInvalidRuleDimensions
 		}
-		mfs := [][]MembershipFunc{u.ageMFs, u.maxHRMFs, u.restingBPMFs, u.probability.MFs}
+		mfs := [][]MembershipFunc{u.dayTimeMFs, u.weekDayMFs, u.imsiCallsMFs, u.mscCallsMFs, u.probability.MFs}
 		for i, val := range rule {
 			if val <= 0 || int(val) > len(mfs[i]) {
 				return ErrInvalidRuleValue
@@ -110,11 +111,12 @@ func formatRules(rules [][]RuleValue) map[RuleValue][][]RuleValue {
 	return ret
 }
 
-func New(ageMFs, maxHRMFs, restingBPMFs []MembershipFunc, probability *Probability, rules [][]RuleValue) (*Usecase, error) {
+func New(dayTimeMFs, weekDayMFs, imsiCallsMFs, mscCallsMFs []MembershipFunc, probability *Probability, rules [][]RuleValue) (*Usecase, error) {
 	u := &Usecase{
-		ageMFs:       ageMFs,
-		maxHRMFs:     maxHRMFs,
-		restingBPMFs: restingBPMFs,
+		dayTimeMFs:   dayTimeMFs,
+		weekDayMFs:   weekDayMFs,
+		imsiCallsMFs: imsiCallsMFs,
+		mscCallsMFs:  mscCallsMFs,
 		probability:  probability,
 	}
 
@@ -123,7 +125,6 @@ func New(ageMFs, maxHRMFs, restingBPMFs []MembershipFunc, probability *Probabili
 		return nil, err
 	}
 	u.rules = formatRules(rules)
-	fmt.Println(u.rules)
 
 	return u, nil
 }
@@ -157,9 +158,11 @@ func maxSlice(vals []float64) float64 {
 }
 
 func (u *Usecase) implication(m *fuzzy.Model) map[RuleValue][]float64 {
-	ageValues := calcMFValues(u.ageMFs, m.Age)
-	maxHRValues := calcMFValues(u.maxHRMFs, m.MaxHR)
-	restingBPValues := calcMFValues(u.restingBPMFs, m.RestingBP)
+	dayTimeVals := calcMFValues(u.dayTimeMFs, m.DayTime)
+	fmt.Println(dayTimeVals)
+	weekDayVals := calcMFValues(u.weekDayMFs, m.WeekDay)
+	imsiCallsVals := calcMFValues(u.imsiCallsMFs, m.IMSICalls)
+	mscCallsVals := calcMFValues(u.mscCallsMFs, m.MSCCalls)
 
 	ruleVals := make(map[RuleValue][]float64)
 	for probVal, rules := range u.rules {
@@ -167,11 +170,11 @@ func (u *Usecase) implication(m *fuzzy.Model) map[RuleValue][]float64 {
 
 		for i, rule := range rules {
 			ruleVals[probVal][i] = minSlice([]float64{
-				ageValues[rule[0]-1],
-				maxHRValues[rule[1]-1],
-				restingBPValues[rule[2]-1],
+				dayTimeVals[rule[0]-1],
+				weekDayVals[rule[1]-1],
+				imsiCallsVals[rule[2]-1],
+				mscCallsVals[rule[3]-1],
 			})
-			fmt.Println(ruleVals[probVal][i])
 		}
 	}
 
