@@ -2,7 +2,6 @@ package usecase
 
 import (
 	"errors"
-	"fmt"
 
 	fuzzyLib "github.com/kczimm/fuzzy"
 	"github.com/wascript3r/anomaly/pkg/fuzzy"
@@ -159,7 +158,6 @@ func maxSlice(vals []float64) float64 {
 
 func (u *Usecase) implication(m *fuzzy.Model) map[RuleValue][]float64 {
 	dayTimeVals := calcMFValues(u.dayTimeMFs, m.DayTime)
-	fmt.Println(dayTimeVals)
 	weekDayVals := calcMFValues(u.weekDayMFs, m.WeekDay)
 	imsiCallsVals := calcMFValues(u.imsiCallsMFs, m.IMSICalls)
 	mscCallsVals := calcMFValues(u.mscCallsMFs, m.MSCCalls)

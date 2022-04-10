@@ -8,3 +8,8 @@ type Request struct {
 	IMSI      string
 	MSC       string
 }
+
+type RequestStats struct {
+	IMSIReqs int
+	MSCReqs  int
+}

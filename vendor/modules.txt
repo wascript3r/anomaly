@@ -1,9 +1,22 @@
+# github.com/go-playground/locales v0.13.0
+## explicit; go 1.13
+github.com/go-playground/locales
+github.com/go-playground/locales/currency
+# github.com/go-playground/universal-translator v0.17.0
+## explicit; go 1.13
+github.com/go-playground/universal-translator
+# github.com/go-playground/validator/v10 v10.3.0
+## explicit; go 1.13
+github.com/go-playground/validator/v10
 # github.com/julienschmidt/httprouter v1.3.0
 ## explicit; go 1.7
 github.com/julienschmidt/httprouter
 # github.com/kczimm/fuzzy v0.0.0-20180713155414-640aba1459dd
 ## explicit
 github.com/kczimm/fuzzy
+# github.com/leodido/go-urn v1.2.0
+## explicit; go 1.13
+github.com/leodido/go-urn
 # github.com/lib/pq v1.7.0
 ## explicit; go 1.13
 github.com/lib/pq

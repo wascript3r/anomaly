@@ -18,8 +18,11 @@ import (
 	// Logger
 	_loggerUcase "github.com/wascript3r/cryptopay/pkg/logger/usecase"
 
+	_requestHandler "github.com/wascript3r/anomaly/pkg/request/delivery/http"
 	// Request
 	_requestRepo "github.com/wascript3r/anomaly/pkg/request/repository"
+	_requestUcase "github.com/wascript3r/anomaly/pkg/request/usecase"
+	_requestValidator "github.com/wascript3r/anomaly/pkg/request/validator"
 
 	// CORS
 	_corsMid "github.com/wascript3r/anomaly/pkg/cors/delivery/http/middleware"
@@ -93,13 +96,22 @@ func main() {
 		fatalError(err)
 	}
 
-	_, err = getFuzzyUcase()
+	fuzzyUcase, err := getFuzzyUcase()
 	if err != nil {
 		log.Fatalln(err)
 	}
 
 	// Request
-	_ = _requestRepo.NewPgRepo(dbConn)
+	requestRepo := _requestRepo.NewPgRepo(dbConn)
+	requestValidator := _requestValidator.New(Cfg.Request.DateTimeFormat)
+	requestUcase := _requestUcase.New(
+		requestRepo,
+		Cfg.Database.Postgres.QueryTimeout.Duration,
+
+		Cfg.Anomaly.Threshold,
+		fuzzyUcase,
+		requestValidator,
+	)
 
 	// Graceful shutdown
 	stopSig := make(chan os.Signal, 1)
@@ -114,6 +126,8 @@ func main() {
 		// pprof
 		httpRouter.Handler(http.MethodGet, "/debug/pprof/*item", http.DefaultServeMux)
 	}
+
+	_requestHandler.NewHTTPHandler(httpRouter, requestUcase)
 
 	// index.html file
 	httpRouter.GET("/", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {

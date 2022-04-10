@@ -10,6 +10,14 @@
         }
     },
 
+    "anomaly": {
+        "threshold": 85
+    },
+
+    "request": {
+        "dateTimeFormat": "2006-01-02 15:04:05"
+    },
+
     "http": {
         "port": "80",
         "enablePprof": true

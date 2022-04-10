@@ -25,6 +25,14 @@ type Config struct {
 		} `json:"postgres"`
 	} `json:"database"`
 
+	Anomaly struct {
+		Threshold float64 `json:"threshold"`
+	} `json:"anomaly"`
+
+	Request struct {
+		DateTimeFormat string `json:"dateTimeFormat"`
+	} `json:"request"`
+
 	HTTP struct {
 		Port        string `json:"port"`
 		EnablePprof bool   `json:"enablePprof"`
