@@ -42,7 +42,13 @@ func (u *Usecase) Process(ctx context.Context, req *request.ProcessReq) (*reques
 	c, cancel := context.WithTimeout(ctx, u.ctxTimeout)
 	defer cancel()
 
-	stats, err := u.requestRepo.GetStats(c, req.IMSI, req.MSC)
+	r := &domain.Request{
+		Timestamp: timestamp,
+		IMSI:      req.IMSI,
+		MSC:       req.MSC,
+	}
+
+	stats, err := u.requestRepo.GetStats(c, r)
 	if err != nil {
 		return nil, err
 	}
@@ -62,11 +68,6 @@ func (u *Usecase) Process(ctx context.Context, req *request.ProcessReq) (*reques
 	blocked := anomalyScore >= u.anomalyThreshold
 
 	if !blocked {
-		r := &domain.Request{
-			Timestamp: timestamp,
-			IMSI:      req.IMSI,
-			MSC:       req.MSC,
-		}
 		err = u.requestRepo.Insert(c, r)
 		if err != nil {
 			return nil, err

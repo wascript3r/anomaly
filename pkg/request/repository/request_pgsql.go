@@ -9,7 +9,7 @@ import (
 
 const (
 	insertSQL   = "INSERT INTO requests (timestamp, imsi, msc) VALUES ($1, $2, $3) RETURNING id"
-	getStatsSQL = "SELECT COUNT(id) FROM requests WHERE timestamp >= NOW() - INTERVAL '1 hour' AND imsi = $1 UNION ALL SELECT COUNT(id) FROM requests WHERE timestamp >= NOW() - INTERVAL '1 hour' AND msc = $2"
+	getStatsSQL = `SELECT COUNT(id) FROM requests WHERE ("timestamp" >= $1::TIMESTAMP - INTERVAL '1 hour' AND "timestamp" <= $1::TIMESTAMP) AND imsi = $2 UNION ALL SELECT COUNT(id) FROM requests WHERE ("timestamp" >= $1::TIMESTAMP - INTERVAL '1 hour' AND "timestamp" <= $1::TIMESTAMP) AND msc = $3`
 )
 
 type PgRepo struct {
@@ -24,9 +24,9 @@ func (p *PgRepo) Insert(ctx context.Context, rs *domain.Request) error {
 	return p.conn.QueryRowContext(ctx, insertSQL, rs.Timestamp, rs.IMSI, rs.MSC).Scan(&rs.ID)
 }
 
-func (p *PgRepo) GetStats(ctx context.Context, imsi, msc string) (*domain.RequestStats, error) {
+func (p *PgRepo) GetStats(ctx context.Context, rs *domain.Request) (*domain.RequestStats, error) {
 	stats := &domain.RequestStats{}
-	rows, err := p.conn.QueryContext(ctx, getStatsSQL, imsi, msc)
+	rows, err := p.conn.QueryContext(ctx, getStatsSQL, rs.Timestamp, rs.IMSI, rs.MSC)
 	if err != nil {
 		return nil, err
 	}
