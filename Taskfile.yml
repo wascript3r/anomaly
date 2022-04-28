@@ -9,18 +9,16 @@ silent: true
 
 tasks:
   compose-stop:
-    desc: Stops docker-compose containers
+    desc: Stops docker compose containers
     dir: "{{ .COMPOSE_DIR }}"
     cmds:
-      - docker-compose kill -s SIGTERM > /dev/null 2>&1 || echo "There are no running containers..."
-      - docker wait $(docker-compose ps -a -q) || echo "There are no existing containers..."
+      - docker compose stop
 
   compose-run:
-    desc: Runs docker-compose
+    desc: Runs docker compose
     dir: "{{ .COMPOSE_DIR }}"
     cmds:
-      - task: compose-stop
-      - docker-compose up -d
+      - docker compose up -d
 
   db-dump:
     desc: Dumps DB schema
