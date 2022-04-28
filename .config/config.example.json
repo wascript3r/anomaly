@@ -20,6 +20,10 @@
 
     "http": {
         "port": "80",
+        "tls": {
+            "certFile": "/path/to/fullchain.pem",
+            "keyFile": "/path/to/privkey.pem"
+        },
         "enablePprof": false
     }
 }

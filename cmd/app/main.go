@@ -139,6 +139,10 @@ func main() {
 		Handler: _corsMid.NewHTTPMiddleware().EnableCors(httpRouter),
 	}
 
+	if Cfg.HTTP.TLS != nil {
+		httpServer.Addr = ":443"
+	}
+
 	logger.Info("Listening on port %s", httpServer.Addr)
 
 	// Graceful shutdown
@@ -157,7 +161,12 @@ func main() {
 		gracefulShutdown()
 	}()
 
-	err = httpServer.ListenAndServe()
+	if Cfg.HTTP.TLS != nil {
+		err = httpServer.ListenAndServeTLS(Cfg.HTTP.TLS.CertFile, Cfg.HTTP.TLS.KeyFile)
+	} else {
+		err = httpServer.ListenAndServe()
+	}
+
 	if err != nil {
 		if err != http.ErrServerClosed {
 			fmt.Println(err)

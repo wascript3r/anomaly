@@ -34,8 +34,12 @@ type Config struct {
 	} `json:"request"`
 
 	HTTP struct {
-		Port        string `json:"port"`
-		EnablePprof bool   `json:"enablePprof"`
+		Port string `json:"port"`
+		TLS  *struct {
+			CertFile string `json:"certFile"`
+			KeyFile  string `json:"keyFile"`
+		} `json:"tls"`
+		EnablePprof bool `json:"enablePprof"`
 	} `json:"http"`
 }
 
