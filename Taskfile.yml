@@ -29,3 +29,8 @@ tasks:
     desc: Migrates DB schema
     cmds:
       - dbmate -d {{ .DBMATE_DIR }} up
+
+  build:
+    desc: Builds linux binary
+    cmds:
+      - env GOOS=linux GOARCH=amd64 go build -o anomaly cmd/app/*.go
