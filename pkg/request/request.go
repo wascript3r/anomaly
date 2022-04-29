@@ -9,6 +9,5 @@ type ProcessReq struct {
 }
 
 type ProcessRes struct {
-	Blocked      bool    `json:"blocked"`
 	AnomalyScore float64 `json:"anomalyScore"`
 }

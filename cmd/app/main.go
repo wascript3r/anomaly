@@ -108,7 +108,6 @@ func main() {
 		requestRepo,
 		Cfg.Database.Postgres.QueryTimeout.Duration,
 
-		Cfg.Anomaly.Threshold,
 		fuzzyUcase,
 		requestValidator,
 	)
