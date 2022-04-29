@@ -18,11 +18,16 @@ import (
 	// Logger
 	_loggerUcase "github.com/wascript3r/cryptopay/pkg/logger/usecase"
 
-	_requestHandler "github.com/wascript3r/anomaly/pkg/request/delivery/http"
 	// Request
+	_requestHandler "github.com/wascript3r/anomaly/pkg/request/delivery/http"
 	_requestRepo "github.com/wascript3r/anomaly/pkg/request/repository"
 	_requestUcase "github.com/wascript3r/anomaly/pkg/request/usecase"
 	_requestValidator "github.com/wascript3r/anomaly/pkg/request/validator"
+
+	// Graph
+	_graphHandler "github.com/wascript3r/anomaly/pkg/graph/delivery/http"
+	_graphRepo "github.com/wascript3r/anomaly/pkg/graph/repository"
+	_graphUcase "github.com/wascript3r/anomaly/pkg/graph/usecase"
 
 	// CORS
 	_corsMid "github.com/wascript3r/anomaly/pkg/cors/delivery/http/middleware"
@@ -112,6 +117,13 @@ func main() {
 		requestValidator,
 	)
 
+	// Graph
+	graphRepo := _graphRepo.NewPgRepo(dbConn)
+	graphUcase := _graphUcase.New(
+		graphRepo,
+		Cfg.Database.Postgres.QueryTimeout.Duration,
+	)
+
 	// Graceful shutdown
 	stopSig := make(chan os.Signal, 1)
 	signal.Notify(stopSig, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
@@ -127,6 +139,7 @@ func main() {
 	}
 
 	_requestHandler.NewHTTPHandler(httpRouter, requestUcase)
+	_graphHandler.NewHTTPHandler(httpRouter, graphUcase)
 
 	// index.html file
 	httpRouter.GET("/", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
