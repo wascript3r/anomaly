@@ -91,7 +91,10 @@ func (u *Usecase) Process(ctx context.Context, req *request.ProcessReq) (*reques
 		MSCCalls:  float64(stats.MSCReqs),
 	}
 
-	r.AnomalyScore = u.fuzzyUcase.CalcResult(fuzzyModel)
+	r.AnomalyScore, err = u.fuzzyUcase.CalcResult(c, fuzzyModel)
+	if err != nil {
+		return nil, err
+	}
 	r.AnomalyScore = float64(int(r.AnomalyScore*10000)) / 10000
 
 	err = u.requestRepo.Insert(c, r)

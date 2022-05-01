@@ -102,7 +102,21 @@ func main() {
 		fatalError(err)
 	}
 
-	fuzzyUcase, err := getFuzzyUcase()
+	// Graph
+	graphRepo := _graphRepo.NewPgRepo(dbConn)
+	graphValidator := _graphValidator.New()
+	graphUcase := _graphUcase.New(
+		graphRepo,
+		Cfg.Database.Postgres.QueryTimeout.Duration,
+
+		graphValidator,
+	)
+
+	// Fuzzy
+	fuzzyUcase, err := getFuzzyUcase(
+		graphRepo,
+		Cfg.Database.Postgres.QueryTimeout.Duration,
+	)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -116,16 +130,6 @@ func main() {
 
 		fuzzyUcase,
 		requestValidator,
-	)
-
-	// Graph
-	graphRepo := _graphRepo.NewPgRepo(dbConn)
-	graphValidator := _graphValidator.New()
-	graphUcase := _graphUcase.New(
-		graphRepo,
-		Cfg.Database.Postgres.QueryTimeout.Duration,
-
-		graphValidator,
 	)
 
 	// Graceful shutdown

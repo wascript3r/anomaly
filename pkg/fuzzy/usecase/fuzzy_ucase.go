@@ -1,10 +1,14 @@
 package usecase
 
 import (
+	"context"
 	"errors"
+	"time"
 
 	fuzzyLib "github.com/kczimm/fuzzy"
+	"github.com/wascript3r/anomaly/pkg/domain"
 	"github.com/wascript3r/anomaly/pkg/fuzzy"
+	"github.com/wascript3r/anomaly/pkg/graph"
 )
 
 const (
@@ -68,6 +72,9 @@ func NewProbability(mfs []MembershipFunc, minX, maxX, step float64) *Probability
 }
 
 type Usecase struct {
+	graphRepo  graph.Repository
+	ctxTimeout time.Duration
+
 	dayTimeMFs   []MembershipFunc
 	weekDayMFs   []MembershipFunc
 	imsiCallsMFs []MembershipFunc
@@ -110,22 +117,82 @@ func formatRules(rules [][]RuleValue) map[RuleValue][][]RuleValue {
 	return ret
 }
 
-func New(dayTimeMFs, weekDayMFs, imsiCallsMFs, mscCallsMFs []MembershipFunc, probability *Probability, rules [][]RuleValue) (*Usecase, error) {
+func New(gr graph.Repository, t time.Duration, rules [][]RuleValue) (*Usecase, error) {
 	u := &Usecase{
-		dayTimeMFs:   dayTimeMFs,
-		weekDayMFs:   weekDayMFs,
-		imsiCallsMFs: imsiCallsMFs,
-		mscCallsMFs:  mscCallsMFs,
-		probability:  probability,
+		graphRepo:  gr,
+		ctxTimeout: t,
 	}
 
-	err := u.validateRules(rules)
+	err := u.updateConfig(context.Background())
+	if err != nil {
+		return nil, err
+	}
+
+	err = u.validateRules(rules)
 	if err != nil {
 		return nil, err
 	}
 	u.rules = formatRules(rules)
 
 	return u, nil
+}
+
+func parseTrapMFs(g *domain.Graph) []MembershipFunc {
+	var ret []MembershipFunc
+	for i, t := range g.TrapMFs {
+		var trapMF MembershipFunc
+		if (len(t.Coeffs)) == 4 {
+			trapMF = NewTrapMF(float64(t.Coeffs[0]), float64(t.Coeffs[1]), float64(t.Coeffs[2]), float64(t.Coeffs[3]))
+		} else if (len(t.Coeffs)) == 8 {
+			trapMF = NewCombinedMF(
+				NewTrapMF(float64(t.Coeffs[0]), float64(t.Coeffs[1]), float64(t.Coeffs[2]), float64(t.Coeffs[3])),
+				NewTrapMF(float64(t.Coeffs[4]), float64(t.Coeffs[5]), float64(t.Coeffs[6]), float64(t.Coeffs[7])),
+			)
+		} else {
+			panic("Invalid trapMF")
+		}
+
+		if g.Infinite && i == len(g.TrapMFs)-1 {
+			trapMF = NewCombinedMF(
+				trapMF,
+				func(x float64) float64 {
+					if x >= float64(t.Coeffs[len(t.Coeffs)-1]) {
+						return 1
+					}
+					return 0
+				},
+			)
+		}
+
+		ret = append(ret, trapMF)
+	}
+
+	return ret
+}
+
+func (u *Usecase) updateConfig(ctx context.Context) error {
+	c, cancel := context.WithTimeout(ctx, u.ctxTimeout)
+	defer cancel()
+
+	gs, err := u.graphRepo.GetAll(c)
+	if err != nil {
+		return err
+	}
+
+	if len(gs) != 5 {
+		panic("Invalid graph count")
+	}
+
+	u.dayTimeMFs = parseTrapMFs(gs[domain.DayTimeGraphType-1])
+	u.weekDayMFs = parseTrapMFs(gs[domain.WeekDayGraphType-1])
+	u.imsiCallsMFs = parseTrapMFs(gs[domain.IMSICallsGraphType-1])
+	u.mscCallsMFs = parseTrapMFs(gs[domain.MSCCallsGraphType-1])
+	u.probability = NewProbability(
+		parseTrapMFs(gs[domain.ProbabilityGraphType-1]),
+		1, 100, 0.1,
+	)
+
+	return nil
 }
 
 func calcMFValues(mfs []MembershipFunc, x float64) []float64 {
@@ -195,8 +262,12 @@ func (u *Usecase) defuzzification(aggregated fuzzyLib.Set) float64 {
 	return aggregated.Centroid()
 }
 
-func (u *Usecase) CalcResult(m *fuzzy.Model) float64 {
+func (u *Usecase) CalcResult(ctx context.Context, m *fuzzy.Model) (float64, error) {
+	if err := u.updateConfig(ctx); err != nil {
+		return 0, err
+	}
+
 	ruleVals := u.implication(m)
 	aggregated := u.aggregation(ruleVals)
-	return u.defuzzification(aggregated)
+	return u.defuzzification(aggregated), nil
 }
