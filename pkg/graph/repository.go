@@ -8,4 +8,6 @@ import (
 
 type Repository interface {
 	GetAll(ctx context.Context) ([]*domain.Graph, error)
+	GetTrapMF(ctx context.Context, id int) (*domain.TrapMF, error)
+	UpdateTrapMF(ctx context.Context, id int, coeffs []int) error
 }

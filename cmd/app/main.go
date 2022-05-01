@@ -28,6 +28,7 @@ import (
 	_graphHandler "github.com/wascript3r/anomaly/pkg/graph/delivery/http"
 	_graphRepo "github.com/wascript3r/anomaly/pkg/graph/repository"
 	_graphUcase "github.com/wascript3r/anomaly/pkg/graph/usecase"
+	_graphValidator "github.com/wascript3r/anomaly/pkg/graph/validator"
 
 	// CORS
 	_corsMid "github.com/wascript3r/anomaly/pkg/cors/delivery/http/middleware"
@@ -119,9 +120,12 @@ func main() {
 
 	// Graph
 	graphRepo := _graphRepo.NewPgRepo(dbConn)
+	graphValidator := _graphValidator.New()
 	graphUcase := _graphUcase.New(
 		graphRepo,
 		Cfg.Database.Postgres.QueryTimeout.Duration,
+
+		graphValidator,
 	)
 
 	// Graceful shutdown

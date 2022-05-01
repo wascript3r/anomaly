@@ -10,12 +10,16 @@ import (
 type Usecase struct {
 	graphRepo  graph.Repository
 	ctxTimeout time.Duration
+
+	validate graph.Validate
 }
 
-func New(gr graph.Repository, t time.Duration) *Usecase {
+func New(gr graph.Repository, t time.Duration, v graph.Validate) *Usecase {
 	return &Usecase{
 		graphRepo:  gr,
 		ctxTimeout: t,
+
+		validate: v,
 	}
 }
 
@@ -47,4 +51,28 @@ func (u *Usecase) GetAll(ctx context.Context) (*graph.GetAllRes, error) {
 	return &graph.GetAllRes{
 		Graphs: graphs,
 	}, nil
+}
+
+func (u *Usecase) UpdateTrapMF(ctx context.Context, req *graph.UpdateTrapMFReq) error {
+	if err := u.validate.RawRequest(req); err != nil {
+		return graph.InvalidInputError
+	}
+
+	if !u.validate.TrapMFCoeffs(req.Coeffs) {
+		return graph.InvalidCoeffsError
+	}
+
+	c, cancel := context.WithTimeout(ctx, u.ctxTimeout)
+	defer cancel()
+
+	t, err := u.graphRepo.GetTrapMF(c, req.ID)
+	if err != nil {
+		return err
+	}
+
+	if len(req.Coeffs) != len(t.Coeffs) {
+		return graph.InvalidCoeffsDimError
+	}
+
+	return u.graphRepo.UpdateTrapMF(c, req.ID, req.Coeffs)
 }

@@ -17,3 +17,10 @@ type TrapMF struct {
 type GetAllRes struct {
 	Graphs []*Graph `json:"graphs"`
 }
+
+// UpdateTrapMF
+
+type UpdateTrapMFReq struct {
+	ID     int   `json:"id" validate:"required"`
+	Coeffs []int `json:"coeffs" validate:"required,min=4,max=8"`
+}

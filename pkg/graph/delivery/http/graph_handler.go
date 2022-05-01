@@ -1,6 +1,7 @@
 package http
 
 import (
+	"encoding/json"
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
@@ -19,6 +20,7 @@ func NewHTTPHandler(r *httprouter.Router, gu graph.Usecase) {
 	}
 
 	r.GET("/api/graph/all", handler.AllGraphs)
+	r.POST("/api/graph/trapmf/update", handler.UpdateTrapMF)
 }
 
 func serveError(w http.ResponseWriter, err error) {
@@ -44,4 +46,22 @@ func (h *HTTPHandler) AllGraphs(w http.ResponseWriter, r *http.Request, _ httpro
 	}
 
 	httpjson.ServeJSON(w, res)
+}
+
+func (h *HTTPHandler) UpdateTrapMF(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	req := &graph.UpdateTrapMFReq{}
+
+	err := json.NewDecoder(r.Body).Decode(req)
+	if err != nil {
+		httpjson.BadRequest(w, nil)
+		return
+	}
+
+	err = h.graphUcase.UpdateTrapMF(r.Context(), req)
+	if err != nil {
+		serveError(w, err)
+		return
+	}
+
+	httpjson.ServeJSON(w, nil)
 }
