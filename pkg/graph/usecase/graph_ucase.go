@@ -58,14 +58,15 @@ func (u *Usecase) UpdateTrapMF(ctx context.Context, req *graph.UpdateTrapMFReq) 
 		return graph.InvalidInputError
 	}
 
-	if !u.validate.TrapMFCoeffs(req.Coeffs) {
-		return graph.InvalidCoeffsError
-	}
-
 	c, cancel := context.WithTimeout(ctx, u.ctxTimeout)
 	defer cancel()
 
 	t, err := u.graphRepo.GetTrapMF(c, req.ID)
+	if err != nil {
+		return err
+	}
+
+	err = u.validate.TrapMFCoeffs(req.Coeffs, t.MinVal, t.MaxVal)
 	if err != nil {
 		return err
 	}

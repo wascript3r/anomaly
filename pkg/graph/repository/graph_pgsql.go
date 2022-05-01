@@ -10,7 +10,7 @@ import (
 
 const (
 	getAllSQL       = "SELECT g.id, g.name, g.infinite, t.id, t.name, t.coeffs FROM graphs g INNER JOIN trap_mfs t ON t.graph_id = g.id ORDER BY g.id, t.id ASC"
-	getTrapMFSQL    = "SELECT id, name, coeffs FROM trap_mfs WHERE id = $1"
+	getTrapMFSQL    = "SELECT t.id, t.name, t.coeffs, g.min_val, g.max_val FROM trap_mfs t INNER JOIN graphs g ON g.id = t.graph_id WHERE t.id = $1"
 	updateTrapMFSQL = "UPDATE trap_mfs SET coeffs = $2 WHERE id = $1"
 )
 
@@ -61,13 +61,13 @@ func (p *PgRepo) GetAll(ctx context.Context) ([]*domain.Graph, error) {
 	return graphs, nil
 }
 
-func (p *PgRepo) GetTrapMF(ctx context.Context, id int) (*domain.TrapMF, error) {
+func (p *PgRepo) GetTrapMF(ctx context.Context, id int) (*domain.FullTrapMF, error) {
 	row := p.conn.QueryRowContext(ctx, getTrapMFSQL, id)
 	var (
 		coeffs []int64
-		t      domain.TrapMF
+		t      domain.FullTrapMF
 	)
-	err := row.Scan(&t.ID, &t.Name, pq.Array(&coeffs))
+	err := row.Scan(&t.ID, &t.Name, pq.Array(&coeffs), &t.MinVal, &t.MaxVal)
 	if err != nil {
 		return nil, err
 	}

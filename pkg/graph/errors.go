@@ -17,6 +17,11 @@ var (
 		errors.New("coefficients must be in increasing order"),
 	)
 
+	CoeffsOutOfRangeError = errcode.New(
+		"coeffs_out_of_range",
+		errors.New("coefficients are out of range"),
+	)
+
 	InvalidCoeffsDimError = errcode.New(
 		"invalid_coeffs_dim",
 		errors.New("coefficients must have the same dimension"),

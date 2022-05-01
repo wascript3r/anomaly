@@ -116,40 +116,38 @@
 
 				spinner.removeClass('d-none');
 				anomalyScore.addClass('d-none');
-				setTimeout(() => {
-					$.ajax({
-						url: API_URL + '/request/process',
-						type: 'POST',
-						data: JSON.stringify({
-							timestamp: formatDate(new Date($('#timestamp').val())),
-							imsi: $('#imsi').val(),
-							msc: $('#msc').val()
-						}),
-						success: data => {
-							spinner.addClass('d-none');
-							anomalyScore.removeClass('d-none')
-
-							if (data.error !== null) {
-								anomalyScore.text('-');
-								addAnomalyBg(null);
-								alert(data.error);
-								return;
-							}
-
-							console.log(data.data.anomalyScore);
-							anomalyScore.text(round(data.data.anomalyScore));
-							addAnomalyBg(data.data.anomalyScore);
-						}
-					}).fail(xhr => {
-						const data = xhr.responseJSON;
-
+				$.ajax({
+					url: API_URL + '/request/process',
+					type: 'POST',
+					data: JSON.stringify({
+						timestamp: formatDate(new Date($('#timestamp').val())),
+						imsi: $('#imsi').val(),
+						msc: $('#msc').val()
+					}),
+					success: data => {
 						spinner.addClass('d-none');
-						anomalyScore.removeClass('d-none').text('-');
-						addAnomalyBg(null);
+						anomalyScore.removeClass('d-none')
 
-						alert(data.error.message);
-					});
-				}, 300);
+						if (data.error !== null) {
+							anomalyScore.text('-');
+							addAnomalyBg(null);
+							alert(data.error);
+							return;
+						}
+
+						console.log(data.data.anomalyScore);
+						anomalyScore.text(round(data.data.anomalyScore));
+						addAnomalyBg(data.data.anomalyScore);
+					}
+				}).fail(xhr => {
+					const data = xhr.responseJSON;
+
+					spinner.addClass('d-none');
+					anomalyScore.removeClass('d-none').text('-');
+					addAnomalyBg(null);
+
+					alert(data.error.message);
+				});
 			});
 		});
 	</script>

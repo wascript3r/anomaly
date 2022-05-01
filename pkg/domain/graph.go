@@ -22,3 +22,11 @@ type TrapMF struct {
 	Name   string
 	Coeffs []int
 }
+
+type FullTrapMF struct {
+	ID     int
+	Name   string
+	Coeffs []int
+	MinVal *int
+	MaxVal *int
+}
