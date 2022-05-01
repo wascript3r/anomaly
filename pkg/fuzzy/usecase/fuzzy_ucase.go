@@ -137,10 +137,32 @@ func New(gr graph.Repository, t time.Duration, rules [][]RuleValue) (*Usecase, e
 	return u, nil
 }
 
+func reformatCoeffs(c []int, maxVal int) {
+	if len(c) > 4 {
+		reformatCoeffs(c[:4], maxVal)
+		reformatCoeffs(c[4:], maxVal)
+		return
+	}
+
+	reachedMax := false
+	for i := 0; i < len(c); i++ {
+		if reachedMax {
+			c[i] = maxVal + 1
+		} else if c[i] == maxVal {
+			reachedMax = true
+		}
+	}
+}
+
 func parseTrapMFs(g *domain.Graph) []MembershipFunc {
 	var ret []MembershipFunc
 	for i, t := range g.TrapMFs {
 		var trapMF MembershipFunc
+
+		if !g.Infinite && g.MaxVal != nil {
+			reformatCoeffs(t.Coeffs, *g.MaxVal)
+		}
+
 		if (len(t.Coeffs)) == 4 {
 			trapMF = NewTrapMF(float64(t.Coeffs[0]), float64(t.Coeffs[1]), float64(t.Coeffs[2]), float64(t.Coeffs[3]))
 		} else if (len(t.Coeffs)) == 8 {
