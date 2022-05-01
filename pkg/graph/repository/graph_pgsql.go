@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	getAllSQL       = "SELECT g.id, g.name, g.infinite, t.id, t.name, t.coeffs FROM graphs g INNER JOIN trap_mfs t ON t.graph_id = g.id ORDER BY g.id, t.id ASC"
+	getAllSQL       = "SELECT g.id, g.name, g.infinite, g.min_val, g.max_val, t.id, t.name, t.coeffs FROM graphs g INNER JOIN trap_mfs t ON t.graph_id = g.id ORDER BY g.id, t.id ASC"
 	getTrapMFSQL    = "SELECT t.id, t.name, t.coeffs, g.min_val, g.max_val FROM trap_mfs t INNER JOIN graphs g ON g.id = t.graph_id WHERE t.id = $1"
 	updateTrapMFSQL = "UPDATE trap_mfs SET coeffs = $2 WHERE id = $1"
 )
@@ -35,7 +35,7 @@ func (p *PgRepo) GetAll(ctx context.Context) ([]*domain.Graph, error) {
 			g      domain.Graph
 			t      domain.TrapMF
 		)
-		err := rows.Scan(&g.ID, &g.Name, &g.Infinite, &t.ID, &t.Name, pq.Array(&coeffs))
+		err := rows.Scan(&g.ID, &g.Name, &g.Infinite, &g.MinVal, &g.MaxVal, &t.ID, &t.Name, pq.Array(&coeffs))
 		if err != nil {
 			return nil, err
 		}

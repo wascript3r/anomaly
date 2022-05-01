@@ -5,6 +5,8 @@ package graph
 type Graph struct {
 	ID      int       `json:"id"`
 	Name    string    `json:"name"`
+	MinVal  *int      `json:"minVal"`
+	MaxVal  *int      `json:"maxVal"`
 	TrapMFs []*TrapMF `json:"trapMFs"`
 }
 

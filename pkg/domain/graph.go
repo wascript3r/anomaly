@@ -14,6 +14,8 @@ type Graph struct {
 	ID       int
 	Name     string
 	Infinite bool
+	MinVal   *int
+	MaxVal   *int
 	TrapMFs  []*TrapMF
 }
 

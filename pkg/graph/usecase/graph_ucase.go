@@ -37,6 +37,8 @@ func (u *Usecase) GetAll(ctx context.Context) (*graph.GetAllRes, error) {
 		graphs[i] = &graph.Graph{
 			ID:      g.ID,
 			Name:    g.Name,
+			MinVal:  g.MinVal,
+			MaxVal:  g.MaxVal,
 			TrapMFs: make([]*graph.TrapMF, len(g.TrapMFs)),
 		}
 		for j, t := range g.TrapMFs {
