@@ -17,6 +17,14 @@ func (v *Validate) RawRequest(s interface{}) error {
 }
 
 func (v *Validate) TrapMFCoeffs(c []int) bool {
+	if len(c) > 4 {
+		valid := v.TrapMFCoeffs(c[:4])
+		if !valid {
+			return false
+		}
+		return v.TrapMFCoeffs(c[4:])
+	}
+
 	for i := 0; i < len(c)-1; i++ {
 		if c[i] > c[i+1] {
 			return false
