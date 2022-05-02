@@ -32,3 +32,9 @@ type FullTrapMF struct {
 	MinVal *int
 	MaxVal *int
 }
+
+type RuleText struct {
+	ID     int
+	Inputs []string
+	Output int
+}

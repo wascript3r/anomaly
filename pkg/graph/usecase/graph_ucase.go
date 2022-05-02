@@ -7,6 +7,8 @@ import (
 	"github.com/wascript3r/anomaly/pkg/graph"
 )
 
+const ProbabilityGraphID = 5
+
 type Usecase struct {
 	graphRepo  graph.Repository
 	ctxTimeout time.Duration
@@ -78,4 +80,43 @@ func (u *Usecase) UpdateTrapMF(ctx context.Context, req *graph.UpdateTrapMFReq) 
 	}
 
 	return u.graphRepo.UpdateTrapMF(c, req.ID, req.Coeffs)
+}
+
+func (u *Usecase) GetRuleList(ctx context.Context) (*graph.GetRuleListRes, error) {
+	c, cancel := context.WithTimeout(ctx, u.ctxTimeout)
+	defer cancel()
+
+	ns, err := u.graphRepo.GetGraphNames(c)
+	if err != nil {
+		return nil, err
+	}
+
+	ts, err := u.graphRepo.GetTrapMFsByGraph(c, ProbabilityGraphID)
+	if err != nil {
+		return nil, err
+	}
+
+	rs, err := u.graphRepo.GetRulesAsText(c)
+	if err != nil {
+		return nil, err
+	}
+
+	rules := make([]*graph.Rule, len(rs))
+	for i, r := range rs {
+		rules[i] = (*graph.Rule)(r)
+	}
+
+	outputs := make([]*graph.Output, len(ts))
+	for i, t := range ts {
+		outputs[i] = &graph.Output{
+			ID:   t.ID,
+			Name: t.Name,
+		}
+	}
+
+	return &graph.GetRuleListRes{
+		Headers: ns,
+		Outputs: outputs,
+		Rules:   rules,
+	}, nil
 }

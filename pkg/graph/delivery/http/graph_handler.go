@@ -21,6 +21,7 @@ func NewHTTPHandler(r *httprouter.Router, gu graph.Usecase) {
 
 	r.GET("/api/graph/all", handler.AllGraphs)
 	r.POST("/api/graph/trapmf/update", handler.UpdateTrapMF)
+	r.GET("/api/rule/all", handler.AllRules)
 }
 
 func serveError(w http.ResponseWriter, err error) {
@@ -64,4 +65,14 @@ func (h *HTTPHandler) UpdateTrapMF(w http.ResponseWriter, r *http.Request, _ htt
 	}
 
 	httpjson.ServeJSON(w, nil)
+}
+
+func (h *HTTPHandler) AllRules(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	res, err := h.graphUcase.GetRuleList(r.Context())
+	if err != nil {
+		serveError(w, err)
+		return
+	}
+
+	httpjson.ServeJSON(w, res)
 }
