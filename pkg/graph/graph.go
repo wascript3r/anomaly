@@ -45,3 +45,10 @@ type GetRuleListRes struct {
 	Outputs []*Output `json:"outputs"`
 	Rules   []*Rule   `json:"rules"`
 }
+
+// UpdateRule
+
+type UpdateRuleReq struct {
+	ID     int `json:"id" validate:"required"`
+	Output int `json:"output" validate:"required"`
+}

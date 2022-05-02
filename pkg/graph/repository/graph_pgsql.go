@@ -6,15 +6,19 @@ import (
 
 	"github.com/lib/pq"
 	"github.com/wascript3r/anomaly/pkg/domain"
+	"github.com/wascript3r/anomaly/pkg/repository/pgsql"
 )
 
 const (
-	getAllSQL            = "SELECT g.id, g.name, g.infinite, g.min_val, g.max_val, t.id, t.name, t.coeffs FROM graphs g INNER JOIN trap_mfs t ON t.graph_id = g.id ORDER BY g.id, t.id ASC"
-	getGraphNamesSQL     = "SELECT name FROM graphs ORDER BY id ASC"
-	getTrapMFSQL         = "SELECT t.id, t.name, t.coeffs, g.min_val, g.max_val FROM trap_mfs t INNER JOIN graphs g ON g.id = t.graph_id WHERE t.id = $1"
-	getTrapMFsByGraphSQL = "SELECT id, name, coeffs FROM trap_mfs WHERE graph_id = $1 ORDER BY id ASC"
-	updateTrapMFSQL      = "UPDATE trap_mfs SET coeffs = $2 WHERE id = $1"
-	getRulesAsTextSQL    = "SELECT r.id, t1.name, t2.name, t3.name, t4.name, r.output FROM rules r INNER JOIN trap_mfs t1 ON (t1.id = tf1_id) INNER JOIN trap_mfs t2 ON (t2.id = tf2_id) INNER JOIN trap_mfs t3 ON (t3.id = tf3_id) INNER JOIN trap_mfs t4 ON (t4.id = tf4_id) ORDER BY r.id ASC"
+	getAllSQL             = "SELECT g.id, g.name, g.infinite, g.min_val, g.max_val, t.id, t.name, t.coeffs FROM graphs g INNER JOIN trap_mfs t ON t.graph_id = g.id ORDER BY g.id, t.id ASC"
+	getGraphNamesSQL      = "SELECT name FROM graphs ORDER BY id ASC"
+	getTrapMFSQL          = "SELECT t.id, t.name, t.coeffs, g.min_val, g.max_val FROM trap_mfs t INNER JOIN graphs g ON g.id = t.graph_id WHERE t.id = $1"
+	getGraphIDByTrapMFSQL = "SELECT graph_id FROM trap_mfs WHERE id = $1"
+	getTrapMFsByGraphSQL  = "SELECT id, name, coeffs FROM trap_mfs WHERE graph_id = $1 ORDER BY id ASC"
+	updateTrapMFSQL       = "UPDATE trap_mfs SET coeffs = $2 WHERE id = $1"
+	getRulesAsTextSQL     = "SELECT r.id, t1.name, t2.name, t3.name, t4.name, r.output FROM rules r INNER JOIN trap_mfs t1 ON (t1.id = tf1_id) INNER JOIN trap_mfs t2 ON (t2.id = tf2_id) INNER JOIN trap_mfs t3 ON (t3.id = tf3_id) INNER JOIN trap_mfs t4 ON (t4.id = tf4_id) ORDER BY r.id ASC"
+	ruleExistsSQL         = "SELECT EXISTS(SELECT 1 FROM rules WHERE id = $1)"
+	updateRuleOutputSQL   = "UPDATE rules SET output = $2 WHERE id = $1"
 )
 
 type PgRepo struct {
@@ -97,7 +101,7 @@ func (p *PgRepo) GetTrapMF(ctx context.Context, id int) (*domain.FullTrapMF, err
 	)
 	err := row.Scan(&t.ID, &t.Name, pq.Array(&coeffs), &t.MinVal, &t.MaxVal)
 	if err != nil {
-		return nil, err
+		return nil, pgsql.ParseSQLError(err)
 	}
 
 	t.Coeffs = make([]int, len(coeffs))
@@ -106,6 +110,18 @@ func (p *PgRepo) GetTrapMF(ctx context.Context, id int) (*domain.FullTrapMF, err
 	}
 
 	return &t, nil
+}
+
+func (p *PgRepo) GetGraphIDByTrapMF(ctx context.Context, id int) (int, error) {
+	row := p.conn.QueryRowContext(ctx, getGraphIDByTrapMFSQL, id)
+
+	var graphID int
+	err := row.Scan(&graphID)
+	if err != nil {
+		return 0, pgsql.ParseSQLError(err)
+	}
+
+	return graphID, nil
 }
 
 func (p *PgRepo) GetTrapMFsByGraph(ctx context.Context, graphID int) ([]*domain.FullTrapMF, error) {
@@ -169,4 +185,21 @@ func (p *PgRepo) GetRulesAsText(ctx context.Context) ([]*domain.RuleText, error)
 	}
 
 	return rules, nil
+}
+
+func (p *PgRepo) RuleExists(ctx context.Context, id int) (bool, error) {
+	row := p.conn.QueryRowContext(ctx, ruleExistsSQL, id)
+
+	var exists bool
+	err := row.Scan(&exists)
+	if err != nil {
+		return false, err
+	}
+
+	return exists, nil
+}
+
+func (p *PgRepo) UpdateRuleOutput(ctx context.Context, id, output int) error {
+	_, err := p.conn.ExecContext(ctx, updateRuleOutputSQL, id, output)
+	return err
 }

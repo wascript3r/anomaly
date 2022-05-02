@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/wascript3r/anomaly/pkg/domain"
+
 	"github.com/wascript3r/anomaly/pkg/graph"
 )
 
@@ -67,6 +69,9 @@ func (u *Usecase) UpdateTrapMF(ctx context.Context, req *graph.UpdateTrapMFReq) 
 
 	t, err := u.graphRepo.GetTrapMF(c, req.ID)
 	if err != nil {
+		if err == domain.ErrNotFound {
+			return graph.NotFoundError
+		}
 		return err
 	}
 
@@ -119,4 +124,35 @@ func (u *Usecase) GetRuleList(ctx context.Context) (*graph.GetRuleListRes, error
 		Outputs: outputs,
 		Rules:   rules,
 	}, nil
+}
+
+func (u *Usecase) UpdateRule(ctx context.Context, req *graph.UpdateRuleReq) error {
+	if err := u.validate.RawRequest(req); err != nil {
+		return graph.InvalidInputError
+	}
+
+	c, cancel := context.WithTimeout(ctx, u.ctxTimeout)
+	defer cancel()
+
+	exists, err := u.graphRepo.RuleExists(c, req.ID)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		return graph.NotFoundError
+	}
+
+	graphID, err := u.graphRepo.GetGraphIDByTrapMF(c, req.Output)
+	if err != nil {
+		if err == domain.ErrNotFound {
+			return graph.InvalidOutputIDError
+		}
+		return err
+	}
+
+	if graphID != ProbabilityGraphID {
+		return graph.InvalidOutputIDError
+	}
+
+	return u.graphRepo.UpdateRuleOutput(c, req.ID, req.Output)
 }

@@ -26,4 +26,14 @@ var (
 		"invalid_coeffs_dim",
 		errors.New("coefficients must have the same dimension"),
 	)
+
+	NotFoundError = errcode.New(
+		"not_found",
+		errors.New("not found"),
+	)
+
+	InvalidOutputIDError = errcode.New(
+		"invalid_output_id",
+		errors.New("invalid output ID"),
+	)
 )
