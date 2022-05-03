@@ -30,6 +30,9 @@ import (
 	_graphUcase "github.com/wascript3r/anomaly/pkg/graph/usecase"
 	_graphValidator "github.com/wascript3r/anomaly/pkg/graph/validator"
 
+	// Fuzzy
+	_fuzzyUcase "github.com/wascript3r/anomaly/pkg/fuzzy/usecase"
+
 	// CORS
 	_corsMid "github.com/wascript3r/anomaly/pkg/cors/delivery/http/middleware"
 )
@@ -112,8 +115,7 @@ func main() {
 		graphValidator,
 	)
 
-	// Fuzzy
-	fuzzyUcase, err := getFuzzyUcase(
+	fuzzyUcase := _fuzzyUcase.New(
 		graphRepo,
 		Cfg.Database.Postgres.QueryTimeout.Duration,
 	)

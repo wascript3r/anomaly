@@ -117,24 +117,11 @@ func formatRules(rules [][]RuleValue) map[RuleValue][][]RuleValue {
 	return ret
 }
 
-func New(gr graph.Repository, t time.Duration, rules [][]RuleValue) (*Usecase, error) {
-	u := &Usecase{
+func New(gr graph.Repository, t time.Duration) *Usecase {
+	return &Usecase{
 		graphRepo:  gr,
 		ctxTimeout: t,
 	}
-
-	err := u.updateConfig(context.Background())
-	if err != nil {
-		return nil, err
-	}
-
-	err = u.validateRules(rules)
-	if err != nil {
-		return nil, err
-	}
-	u.rules = formatRules(rules)
-
-	return u, nil
 }
 
 func reformatCoeffs(c []int, maxVal int) {
@@ -213,6 +200,33 @@ func (u *Usecase) updateConfig(ctx context.Context) error {
 		parseTrapMFs(gs[domain.ProbabilityGraphType-1]),
 		1, 100, 0.1,
 	)
+
+	rs, err := u.graphRepo.GetRules(c)
+	if err != nil {
+		return err
+	}
+
+	indexes := make(map[int]RuleValue)
+	for _, g := range gs {
+		for j, t := range g.TrapMFs {
+			indexes[t.ID] = RuleValue(j + 1)
+		}
+	}
+
+	localRs := make([][]RuleValue, len(rs))
+	for i, r := range rs {
+		localRs[i] = make([]RuleValue, len(r.TFIDs)+1)
+		for j, v := range r.TFIDs {
+			localRs[i][j] = indexes[v]
+		}
+		localRs[i][len(r.TFIDs)] = indexes[r.Output]
+	}
+
+	err = u.validateRules(localRs)
+	if err != nil {
+		return err
+	}
+	u.rules = formatRules(localRs)
 
 	return nil
 }
