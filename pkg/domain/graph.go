@@ -38,3 +38,9 @@ type RuleText struct {
 	Inputs []string
 	Output int
 }
+
+type Rule struct {
+	ID     int
+	TFIDs  []int
+	Output int
+}

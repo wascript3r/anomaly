@@ -14,6 +14,7 @@ type Repository interface {
 	GetTrapMFsByGraph(ctx context.Context, graphID int) ([]*domain.FullTrapMF, error)
 	UpdateTrapMF(ctx context.Context, id int, coeffs []int) error
 	GetRulesAsText(ctx context.Context) ([]*domain.RuleText, error)
+	GetRules(ctx context.Context) ([]*domain.Rule, error)
 	RuleExists(ctx context.Context, id int) (bool, error)
 	UpdateRuleOutput(ctx context.Context, id, output int) error
 }

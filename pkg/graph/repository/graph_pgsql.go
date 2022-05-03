@@ -17,6 +17,7 @@ const (
 	getTrapMFsByGraphSQL  = "SELECT id, name, coeffs FROM trap_mfs WHERE graph_id = $1 ORDER BY id ASC"
 	updateTrapMFSQL       = "UPDATE trap_mfs SET coeffs = $2 WHERE id = $1"
 	getRulesAsTextSQL     = "SELECT r.id, t1.name, t2.name, t3.name, t4.name, r.output FROM rules r INNER JOIN trap_mfs t1 ON (t1.id = tf1_id) INNER JOIN trap_mfs t2 ON (t2.id = tf2_id) INNER JOIN trap_mfs t3 ON (t3.id = tf3_id) INNER JOIN trap_mfs t4 ON (t4.id = tf4_id) ORDER BY r.id ASC"
+	getRulesSQL           = "SELECT id, tf1_id, tf2_id, tf3_id, tf4_id, output FROM rules ORDER BY id ASC"
 	ruleExistsSQL         = "SELECT EXISTS(SELECT 1 FROM rules WHERE id = $1)"
 	updateRuleOutputSQL   = "UPDATE rules SET output = $2 WHERE id = $1"
 )
@@ -173,6 +174,32 @@ func (p *PgRepo) GetRulesAsText(ctx context.Context) ([]*domain.RuleText, error)
 		r.Inputs = make([]string, 4)
 
 		err := rows.Scan(&r.ID, &r.Inputs[0], &r.Inputs[1], &r.Inputs[2], &r.Inputs[3], &r.Output)
+		if err != nil {
+			return nil, err
+		}
+
+		rules = append(rules, &r)
+	}
+
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+
+	return rules, nil
+}
+
+func (p *PgRepo) GetRules(ctx context.Context) ([]*domain.Rule, error) {
+	rows, err := p.conn.QueryContext(ctx, getRulesSQL)
+	if err != nil {
+		return nil, err
+	}
+
+	var rules []*domain.Rule
+	for rows.Next() {
+		var r domain.Rule
+		r.TFIDs = make([]int, 4)
+
+		err := rows.Scan(&r.ID, &r.TFIDs[0], &r.TFIDs[1], &r.TFIDs[2], &r.TFIDs[3], &r.Output)
 		if err != nil {
 			return nil, err
 		}
