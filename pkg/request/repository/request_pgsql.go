@@ -20,6 +20,8 @@ const (
 	insertIMSISQL    = "INSERT INTO imsi (imsi) VALUES ($1) RETURNING id"
 	insertMSCSQL     = "INSERT INTO msc (msc) VALUES ($1) RETURNING id"
 	getTotalStatsSQL = "SELECT DATE_TRUNC('hour', timestamp) AS timestamp_h, COUNT(id) AS total, COUNT(id) FILTER (WHERE anomaly_score >= $1) AS anomalies FROM requests <filter> GROUP BY timestamp_h ORDER BY timestamp_h ASC"
+	getIMSIStatsSQL  = "SELECT i.id, i.imsi, r.total, r.anomalies FROM (SELECT imsi_id, COUNT(id) AS total, COUNT(id) FILTER (WHERE anomaly_score >= $1) AS anomalies FROM requests <filter> GROUP BY imsi_id) r INNER JOIN imsi i ON i.id = r.imsi_id ORDER BY total DESC LIMIT $2"
+	getMSCStatsSQL   = "SELECT m.id, m.msc, r.total, r.anomalies FROM (SELECT msc_id, COUNT(id) AS total, COUNT(id) FILTER (WHERE anomaly_score >= $1) AS anomalies FROM requests <filter> GROUP BY msc_id) r INNER JOIN msc m ON m.id = r.msc_id ORDER BY total DESC LIMIT $2"
 	getAllSQL        = "SELECT timestamp, imsi, msc, anomaly_score FROM requests r INNER JOIN imsi i ON i.id = r.imsi_id INNER JOIN msc m ON m.id = r.msc_id <filter> ORDER BY timestamp ASC"
 
 	startTimestampFilter = "timestamp >= <param>::TIMESTAMP"
@@ -129,10 +131,7 @@ func (p *PgRepo) InsertMSC(ctx context.Context, ms *domain.MSC) error {
 	return p.conn.QueryRowContext(ctx, insertMSCSQL, ms.MSC).Scan(&ms.ID)
 }
 
-func (p *PgRepo) GetTotalStats(ctx context.Context, anomalyThreshold float64, filter *domain.RequestFilter) ([]*domain.RequestTotalStats, error) {
-	f := newFilter(getTotalStatsSQL)
-	f.addArg(anomalyThreshold)
-
+func (p *PgRepo) initRequestFilter(filter *domain.RequestFilter, f *filter) {
 	if filter.StartTime != nil {
 		f.add(startTimestampFilter, *filter.StartTime)
 	}
@@ -145,6 +144,12 @@ func (p *PgRepo) GetTotalStats(ctx context.Context, anomalyThreshold float64, fi
 	if filter.MSCIDs != nil {
 		f.add(mscFilter, pq.Array(filter.MSCIDs))
 	}
+}
+
+func (p *PgRepo) GetTotalStats(ctx context.Context, anomalyThreshold float64, filter *domain.RequestFilter) ([]*domain.RequestTotalStats, error) {
+	f := newFilter(getTotalStatsSQL)
+	f.addArg(anomalyThreshold)
+	p.initRequestFilter(filter, f)
 
 	rows, err := p.conn.QueryContext(ctx, f.getQuery(), f.getArgs()...)
 	if err != nil {
@@ -168,21 +173,65 @@ func (p *PgRepo) GetTotalStats(ctx context.Context, anomalyThreshold float64, fi
 	return stats, nil
 }
 
+func (p *PgRepo) GetIMSIStats(ctx context.Context, anomalyThreshold float64, filter *domain.RequestAdvancedFilter) ([]*domain.RequestIMSIStats, error) {
+	f := newFilter(getIMSIStatsSQL)
+	f.addArg(anomalyThreshold)
+	f.addArg(filter.Limit)
+	p.initRequestFilter(&filter.RequestFilter, f)
+
+	rows, err := p.conn.QueryContext(ctx, f.getQuery(), f.getArgs()...)
+	if err != nil {
+		return nil, err
+	}
+
+	var stats []*domain.RequestIMSIStats
+	for rows.Next() {
+		var is domain.RequestIMSIStats
+		err := rows.Scan(&is.ID, &is.IMSI, &is.Total, &is.Anomalies)
+		if err != nil {
+			return nil, err
+		}
+		stats = append(stats, &is)
+	}
+
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+
+	return stats, nil
+}
+
+func (p *PgRepo) GetMSCStats(ctx context.Context, anomalyThreshold float64, filter *domain.RequestAdvancedFilter) ([]*domain.RequestMSCStats, error) {
+	f := newFilter(getMSCStatsSQL)
+	f.addArg(anomalyThreshold)
+	f.addArg(filter.Limit)
+	p.initRequestFilter(&filter.RequestFilter, f)
+
+	rows, err := p.conn.QueryContext(ctx, f.getQuery(), f.getArgs()...)
+	if err != nil {
+		return nil, err
+	}
+
+	var stats []*domain.RequestMSCStats
+	for rows.Next() {
+		var ms domain.RequestMSCStats
+		err := rows.Scan(&ms.ID, &ms.MSC, &ms.Total, &ms.Anomalies)
+		if err != nil {
+			return nil, err
+		}
+		stats = append(stats, &ms)
+	}
+
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+
+	return stats, nil
+}
+
 func (p *PgRepo) GetAll(ctx context.Context, filter *domain.RequestFilter) ([]*domain.RequestMeta, error) {
 	f := newFilter(getAllSQL)
-
-	if filter.StartTime != nil {
-		f.add(startTimestampFilter, *filter.StartTime)
-	}
-	if filter.EndTime != nil {
-		f.add(endTimestampFilter, *filter.EndTime)
-	}
-	if filter.IMSIIDs != nil {
-		f.add(imsiFilter, pq.Array(filter.IMSIIDs))
-	}
-	if filter.MSCIDs != nil {
-		f.add(mscFilter, pq.Array(filter.MSCIDs))
-	}
+	p.initRequestFilter(filter, f)
 
 	rows, err := p.conn.QueryContext(ctx, f.getQuery(), f.getArgs()...)
 	if err != nil {

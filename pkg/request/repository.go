@@ -14,5 +14,7 @@ type Repository interface {
 	InsertIMSI(ctx context.Context, is *domain.IMSI) error
 	InsertMSC(ctx context.Context, ms *domain.MSC) error
 	GetTotalStats(ctx context.Context, anomalyThreshold float64, filter *domain.RequestFilter) ([]*domain.RequestTotalStats, error)
+	GetIMSIStats(ctx context.Context, anomalyThreshold float64, filter *domain.RequestAdvancedFilter) ([]*domain.RequestIMSIStats, error)
+	GetMSCStats(ctx context.Context, anomalyThreshold float64, filter *domain.RequestAdvancedFilter) ([]*domain.RequestMSCStats, error)
 	GetAll(ctx context.Context, filter *domain.RequestFilter) ([]*domain.RequestMeta, error)
 }

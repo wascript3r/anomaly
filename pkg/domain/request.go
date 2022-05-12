@@ -34,3 +34,22 @@ type RequestTotalStats struct {
 	Total     int
 	Anomalies int
 }
+
+type RequestAdvancedFilter struct {
+	RequestFilter
+	Limit int
+}
+
+type RequestIMSIStats struct {
+	ID        int
+	IMSI      string
+	Total     int
+	Anomalies int
+}
+
+type RequestMSCStats struct {
+	ID        int
+	MSC       string
+	Total     int
+	Anomalies int
+}

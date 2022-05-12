@@ -33,6 +33,39 @@ type GetStatsRes struct {
 	TotalStats []*TotalStats `json:"totalStats"`
 }
 
+// GetIMSIStats
+
+type AdvancedFilterReq struct {
+	FilterReq
+	Limit int `json:"limit" validate:"required,gt=0"`
+}
+
+type IMSIStats struct {
+	ID        int    `json:"id"`
+	IMSI      string `json:"imsi"`
+	Total     int    `json:"total"`
+	Anomalies int    `json:"anomalies"`
+}
+
+type GetIMSIStatsRes struct {
+	Count     int          `json:"count"`
+	IMSIStats []*IMSIStats `json:"imsiStats"`
+}
+
+// GetMSCStats
+
+type MSCStats struct {
+	ID        int    `json:"id"`
+	MSC       string `json:"msc"`
+	Total     int    `json:"total"`
+	Anomalies int    `json:"anomalies"`
+}
+
+type GetMSCStatsRes struct {
+	Count    int         `json:"count"`
+	MSCStats []*MSCStats `json:"mscStats"`
+}
+
 // GetAll
 
 type Request struct {

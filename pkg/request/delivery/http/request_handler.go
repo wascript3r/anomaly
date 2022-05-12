@@ -23,6 +23,8 @@ func NewHTTPHandler(r *httprouter.Router, ru request.Usecase) {
 	r.POST("/api/request/process", handler.ProcessRequest)
 	r.POST("/api/request/stats", handler.GetStats)
 	r.POST("/api/request/all", handler.GetAll)
+	r.POST("/api/request/imsi/stats", handler.GetIMSIStats)
+	r.POST("/api/request/msc/stats", handler.GetMSCStats)
 }
 
 func serveError(w http.ResponseWriter, err error) {
@@ -68,6 +70,42 @@ func (h *HTTPHandler) GetStats(w http.ResponseWriter, r *http.Request, _ httprou
 	}
 
 	res, err := h.requestUcase.GetStats(r.Context(), req)
+	if err != nil {
+		serveError(w, err)
+		return
+	}
+
+	httpjson.ServeJSON(w, res)
+}
+
+func (h *HTTPHandler) GetIMSIStats(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	req := &request.AdvancedFilterReq{}
+
+	err := json.NewDecoder(r.Body).Decode(req)
+	if err != nil {
+		httpjson.BadRequest(w, nil)
+		return
+	}
+
+	res, err := h.requestUcase.GetIMSIStats(r.Context(), req)
+	if err != nil {
+		serveError(w, err)
+		return
+	}
+
+	httpjson.ServeJSON(w, res)
+}
+
+func (h *HTTPHandler) GetMSCStats(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	req := &request.AdvancedFilterReq{}
+
+	err := json.NewDecoder(r.Body).Decode(req)
+	if err != nil {
+		httpjson.BadRequest(w, nil)
+		return
+	}
+
+	res, err := h.requestUcase.GetMSCStats(r.Context(), req)
 	if err != nil {
 		serveError(w, err)
 		return

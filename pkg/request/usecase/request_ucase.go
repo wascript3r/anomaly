@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"log"
 	"time"
 
 	"github.com/wascript3r/anomaly/pkg/domain"
@@ -112,10 +113,6 @@ func (u *Usecase) Process(ctx context.Context, req *request.ProcessReq) (*reques
 }
 
 func (u *Usecase) parseFilter(req *request.FilterReq) (*domain.RequestFilter, error) {
-	if err := u.validate.RawRequest(req); err != nil {
-		return nil, request.InvalidInputError
-	}
-
 	filter := &domain.RequestFilter{
 		StartTime: nil,
 		EndTime:   nil,
@@ -142,6 +139,10 @@ func (u *Usecase) parseFilter(req *request.FilterReq) (*domain.RequestFilter, er
 }
 
 func (u *Usecase) GetStats(ctx context.Context, req *request.FilterReq) (*request.GetStatsRes, error) {
+	if err := u.validate.RawRequest(req); err != nil {
+		return nil, request.InvalidInputError
+	}
+
 	filter, err := u.parseFilter(req)
 	if err != nil {
 		return nil, err
@@ -165,7 +166,78 @@ func (u *Usecase) GetStats(ctx context.Context, req *request.FilterReq) (*reques
 	}, nil
 }
 
+func (u *Usecase) GetIMSIStats(ctx context.Context, req *request.AdvancedFilterReq) (*request.GetIMSIStatsRes, error) {
+	if err := u.validate.RawRequest(req); err != nil {
+		return nil, request.InvalidInputError
+	}
+
+	filter, err := u.parseFilter(&req.FilterReq)
+	if err != nil {
+		return nil, err
+	}
+	aFilter := &domain.RequestAdvancedFilter{
+		RequestFilter: *filter,
+		Limit:         req.Limit,
+	}
+
+	c, cancel := context.WithTimeout(ctx, u.ctxTimeout)
+	defer cancel()
+
+	is, err := u.requestRepo.GetIMSIStats(c, u.anomalyThreshold, aFilter)
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+
+	stats := make([]*request.IMSIStats, len(is))
+	for i, is := range is {
+		stats[i] = (*request.IMSIStats)(is)
+	}
+
+	return &request.GetIMSIStatsRes{
+		Count:     len(stats),
+		IMSIStats: stats,
+	}, nil
+}
+
+func (u *Usecase) GetMSCStats(ctx context.Context, req *request.AdvancedFilterReq) (*request.GetMSCStatsRes, error) {
+	if err := u.validate.RawRequest(req); err != nil {
+		return nil, request.InvalidInputError
+	}
+
+	filter, err := u.parseFilter(&req.FilterReq)
+	if err != nil {
+		return nil, err
+	}
+	aFilter := &domain.RequestAdvancedFilter{
+		RequestFilter: *filter,
+		Limit:         req.Limit,
+	}
+
+	c, cancel := context.WithTimeout(ctx, u.ctxTimeout)
+	defer cancel()
+
+	ms, err := u.requestRepo.GetMSCStats(c, u.anomalyThreshold, aFilter)
+	if err != nil {
+		return nil, err
+	}
+
+	stats := make([]*request.MSCStats, len(ms))
+	for i, m := range ms {
+		stats[i] = (*request.MSCStats)(m)
+	}
+
+	return &request.GetMSCStatsRes{
+		Count:    len(stats),
+		MSCStats: stats,
+	}, nil
+}
+
 func (u *Usecase) GetAll(ctx context.Context, req *request.FilterReq) (*request.GetAllRes, error) {
+	if err := u.validate.RawRequest(req); err != nil {
+		return nil, request.InvalidInputError
+	}
+
 	filter, err := u.parseFilter(req)
 	if err != nil {
 		return nil, err
