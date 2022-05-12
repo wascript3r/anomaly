@@ -13,4 +13,6 @@ type Repository interface {
 	GetMSCID(ctx context.Context, msc string) (int, error)
 	InsertIMSI(ctx context.Context, is *domain.IMSI) error
 	InsertMSC(ctx context.Context, ms *domain.MSC) error
+	GetTotalStats(ctx context.Context, anomalyThreshold float64, filter *domain.RequestFilter) ([]*domain.RequestTotalStats, error)
+	GetAll(ctx context.Context, filter *domain.RequestFilter) ([]*domain.RequestMeta, error)
 }

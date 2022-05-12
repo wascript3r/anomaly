@@ -13,14 +13,18 @@ type Usecase struct {
 	requestRepo request.Repository
 	ctxTimeout  time.Duration
 
+	anomalyThreshold float64
+
 	fuzzyUcase fuzzy.UseCase
 	validate   request.Validate
 }
 
-func New(rr request.Repository, t time.Duration, fu fuzzy.UseCase, v request.Validate) *Usecase {
+func New(rr request.Repository, t time.Duration, anomalyThreshold float64, fu fuzzy.UseCase, v request.Validate) *Usecase {
 	return &Usecase{
 		requestRepo: rr,
 		ctxTimeout:  t,
+
+		anomalyThreshold: anomalyThreshold,
 
 		fuzzyUcase: fu,
 		validate:   v,
@@ -104,5 +108,84 @@ func (u *Usecase) Process(ctx context.Context, req *request.ProcessReq) (*reques
 
 	return &request.ProcessRes{
 		AnomalyScore: r.AnomalyScore,
+	}, nil
+}
+
+func (u *Usecase) parseFilter(req *request.FilterReq) (*domain.RequestFilter, error) {
+	if err := u.validate.RawRequest(req); err != nil {
+		return nil, request.InvalidInputError
+	}
+
+	filter := &domain.RequestFilter{
+		StartTime: nil,
+		EndTime:   nil,
+		IMSIIDs:   req.IMSIS,
+		MSCIDs:    req.MSCS,
+	}
+
+	if req.StartTime != nil {
+		startTime, err := time.Parse(u.validate.GetDateTimeFormat(), *req.StartTime)
+		if err != nil {
+			return nil, request.CannotParseTimestampError
+		}
+		filter.StartTime = &startTime
+	}
+	if req.EndTime != nil {
+		endTime, err := time.Parse(u.validate.GetDateTimeFormat(), *req.EndTime)
+		if err != nil {
+			return nil, request.CannotParseTimestampError
+		}
+		filter.EndTime = &endTime
+	}
+
+	return filter, nil
+}
+
+func (u *Usecase) GetStats(ctx context.Context, req *request.FilterReq) (*request.GetStatsRes, error) {
+	filter, err := u.parseFilter(req)
+	if err != nil {
+		return nil, err
+	}
+
+	c, cancel := context.WithTimeout(ctx, u.ctxTimeout)
+	defer cancel()
+
+	ts, err := u.requestRepo.GetTotalStats(c, u.anomalyThreshold, filter)
+	if err != nil {
+		return nil, err
+	}
+
+	stats := make([]*request.TotalStats, len(ts))
+	for i, t := range ts {
+		stats[i] = (*request.TotalStats)(t)
+	}
+
+	return &request.GetStatsRes{
+		TotalStats: stats,
+	}, nil
+}
+
+func (u *Usecase) GetAll(ctx context.Context, req *request.FilterReq) (*request.GetAllRes, error) {
+	filter, err := u.parseFilter(req)
+	if err != nil {
+		return nil, err
+	}
+
+	c, cancel := context.WithTimeout(ctx, u.ctxTimeout)
+	defer cancel()
+
+	rs, err := u.requestRepo.GetAll(c, filter)
+	if err != nil {
+		return nil, err
+	}
+
+	requests := make([]*request.Request, len(rs))
+	for i, r := range rs {
+		requests[i] = (*request.Request)(r)
+	}
+
+	return &request.GetAllRes{
+		Count:    len(requests),
+		Requests: requests,
 	}, nil
 }

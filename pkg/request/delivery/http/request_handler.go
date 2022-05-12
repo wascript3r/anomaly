@@ -21,6 +21,8 @@ func NewHTTPHandler(r *httprouter.Router, ru request.Usecase) {
 	}
 
 	r.POST("/api/request/process", handler.ProcessRequest)
+	r.GET("/api/request/stats", handler.GetStats)
+	r.GET("/api/request/all", handler.GetAll)
 }
 
 func serveError(w http.ResponseWriter, err error) {
@@ -48,6 +50,42 @@ func (h *HTTPHandler) ProcessRequest(w http.ResponseWriter, r *http.Request, _ h
 	}
 
 	res, err := h.requestUcase.Process(r.Context(), req)
+	if err != nil {
+		serveError(w, err)
+		return
+	}
+
+	httpjson.ServeJSON(w, res)
+}
+
+func (h *HTTPHandler) GetStats(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	req := &request.FilterReq{}
+
+	err := json.NewDecoder(r.Body).Decode(req)
+	if err != nil {
+		httpjson.BadRequest(w, nil)
+		return
+	}
+
+	res, err := h.requestUcase.GetStats(r.Context(), req)
+	if err != nil {
+		serveError(w, err)
+		return
+	}
+
+	httpjson.ServeJSON(w, res)
+}
+
+func (h *HTTPHandler) GetAll(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	req := &request.FilterReq{}
+
+	err := json.NewDecoder(r.Body).Decode(req)
+	if err != nil {
+		httpjson.BadRequest(w, nil)
+		return
+	}
+
+	res, err := h.requestUcase.GetAll(r.Context(), req)
 	if err != nil {
 		serveError(w, err)
 		return
