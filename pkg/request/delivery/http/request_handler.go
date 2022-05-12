@@ -21,8 +21,8 @@ func NewHTTPHandler(r *httprouter.Router, ru request.Usecase) {
 	}
 
 	r.POST("/api/request/process", handler.ProcessRequest)
-	r.GET("/api/request/stats", handler.GetStats)
-	r.GET("/api/request/all", handler.GetAll)
+	r.POST("/api/request/stats", handler.GetStats)
+	r.POST("/api/request/all", handler.GetAll)
 }
 
 func serveError(w http.ResponseWriter, err error) {
